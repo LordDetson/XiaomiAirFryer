@@ -1,0 +1,46 @@
+"""Base entity of the Xiaomi AirFryer component."""
+# pylint: disable=import-error
+from homeassistant.const import CONF_HOST, CONF_MAC
+from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers.entity import Entity
+from homeassistant.util import slugify
+
+from .const import CONF_MODEL, DATA_KEY, DATA_STATE, DOMAIN
+
+
+class XiaomiAirFryerEntity(Entity):
+    """Common device info and state access for the control entities."""
+
+    def __init__(self, device, entry, name, entity_id_format):
+        """Initialize the entity."""
+        self._device = device
+        self._host = entry.options[CONF_HOST]
+        self._model = entry.options.get(CONF_MODEL)
+        self._mac = entry.options[CONF_MAC]
+        self._device_id = entry.unique_id
+        self._device_name = entry.title
+        self._attr_name = name
+        self._attr_unique_id = "{}.{}-{}".format(
+            DOMAIN, entry.unique_id, name.lower().replace(" ", "-"))
+        self.entity_id = entity_id_format.format(
+            "{}_{}".format(DOMAIN, slugify(name))
+        )
+
+    @property
+    def device_info(self):
+        """Return the device info."""
+        device_info = {
+            "identifiers": {(DOMAIN, self._device_id)},
+            "manufacturer": (self._model or "Xiaomi").split(".", 1)[0].capitalize(),
+            "name": self._device_name,
+            "model": self._model,
+        }
+
+        if self._mac is not None:
+            device_info["connections"] = {(dr.CONNECTION_NETWORK_MAC, self._mac)}
+
+        return device_info
+
+    def _shared_state(self):
+        """Return the last status fetched by the switch entity, if any."""
+        return self.hass.data.get(DATA_KEY, {}).get(self._host, {}).get(DATA_STATE)

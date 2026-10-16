@@ -543,6 +543,11 @@ MAX_TARGET_TEMPERATURE = {
 }
 
 
+def target_temperature_range(model: str) -> tuple:
+    """Return (min, max, step) of target_temperature in degrees for a model."""
+    return (40, MAX_TARGET_TEMPERATURE.get(model, 200), 5)
+
+
 class StatusDefault(enum.Enum):
     """ Status """
     Unknown = -1
@@ -670,6 +675,14 @@ class CookingTexture(enum.Enum):
     TenderRoast = 2
     Degrease = 3
 
+
+def cooking_mode_enum(model: str) -> type:
+    """Return the cooking mode enum used by a model."""
+    if model in [MODEL_FRYER_MAF14]:
+        return CookingModeXiaomi
+    return CookingModeDefault
+
+
 class FryerStatusMiot(DeviceStatus):
     """Container for status reports for Xiaomi FryerStatusMiot."""
 
@@ -715,11 +728,7 @@ class FryerStatusMiot(DeviceStatus):
     @property
     def mode(self) -> int:
         """Mode."""
-        mode_raw = self.data["mode"]
-        if self.model in [MODEL_FRYER_MAF14]:
-            return CookingModeXiaomi(mode_raw)
-        else:
-            return CookingModeDefault(mode_raw)
+        return cooking_mode_enum(self.model)(self.data["mode"])
 
     @property
     def status(self) -> int:
@@ -945,6 +954,20 @@ class FryerMiot(MiotDevice):
         if target_temperature < 40 or target_temperature > max_temperature:
             raise DeviceException("Invalid value for target_temperature: %s" % target_temperature)
         return self.set_property("target_temperature", target_temperature)
+
+    @command(
+        click.argument("mode", type=int),
+        default_output=format_output("Setting mode to {mode}"),
+    )
+    def set_mode(self, mode: int):
+        """Set cooking mode.
+
+        Caution: on xiaomi.fryer.maf65 writing the mode immediately starts
+        cooking with the preset time and temperature of that mode.
+        """
+        if mode not in [item.value for item in cooking_mode_enum(self._model)]:
+            raise DeviceException("Invalid value for mode: %s" % mode)
+        return self.set_property("mode", mode)
 
     @command()
     def start_cook(self) -> None:

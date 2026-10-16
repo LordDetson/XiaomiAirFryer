@@ -49,6 +49,11 @@ Credits: Thanks to [Rytilahti](https://github.com/rytilahti/python-miio) for all
   - turn_pot (available while cooking)
 * Switches
   -  Start/Stop
+* Numbers (all models)
+  - target_temperature (writes the target temperature; the range follows the model)
+  - target_time (writes the cooking time in minutes)
+* Buttons (only the actions the model supports)
+  - Start, Pause, Resume, Stop
 * Services
   - TODO: child lock
 
