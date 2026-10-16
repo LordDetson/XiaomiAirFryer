@@ -44,3 +44,4 @@ class XiaomiAirFryerButton(XiaomiAirFryerEntity, ButtonEntity):
     async def async_press(self) -> None:
         """Run the action on the device."""
         await self.hass.async_add_executor_job(getattr(self._device, self._method))
+        await self._refresh_switch()

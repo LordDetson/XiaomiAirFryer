@@ -86,4 +86,5 @@ class XiaomiAirFryerNumber(XiaomiAirFryerEntity, NumberEntity):
             getattr(self._device, self._method), int(value)
         )
         self._attr_native_value = int(value)
+        self._patch_shared_state(self._key, int(value))
         self.async_schedule_update_ha_state()
