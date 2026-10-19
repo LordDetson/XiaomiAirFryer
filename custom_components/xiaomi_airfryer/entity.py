@@ -3,9 +3,13 @@
 from homeassistant.const import CONF_HOST, CONF_MAC
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.entity import Entity
+from homeassistant.helpers.event import async_call_later
 from homeassistant.util import slugify
 
 from .const import CONF_MODEL, DATA_DEVICE, DATA_KEY, DATA_STATE, DOMAIN
+
+# The device reports a new status only a moment after an action was accepted.
+REFRESH_DELAY = 3
 
 
 class XiaomiAirFryerEntity(Entity):
@@ -52,7 +56,13 @@ class XiaomiAirFryerEntity(Entity):
             state.data[key] = value
 
     async def _refresh_switch(self):
-        """Ask the switch entity to poll the device now."""
+        """Ask the switch entity to poll the device now and again shortly after."""
         switch = self.hass.data.get(DATA_KEY, {}).get(self._host, {}).get(DATA_DEVICE)
-        if switch is not None:
+        if switch is None:
+            return
+        await switch.async_update_ha_state(True)
+
+        async def _refresh_again(_now):
             await switch.async_update_ha_state(True)
+
+        async_call_later(self.hass, REFRESH_DELAY, _refresh_again)
